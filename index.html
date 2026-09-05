@@ -160,6 +160,28 @@
   nav.tabs button .ic{font-size:19px;}
   nav.tabs button.active{color:var(--mint);}
 
+  /* Nút Admin Panel trôi nổi ở góc dưới (phía trên thanh điều hướng) */
+  #floatingAdminBtn {
+    position: fixed;
+    bottom: 70px;
+    right: 16px;
+    z-index: 40;
+    background: linear-gradient(135deg, var(--mint), #1c8f75);
+    color: #04140f;
+    border: none;
+    border-radius: 99px;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(53, 210, 164, 0.4);
+    display: none;
+    align-items: center;
+    gap: 6px;
+    transition: transform 0.15s;
+  }
+  #floatingAdminBtn:active { transform: scale(0.95); }
+
   .toast{
     position:fixed;top:14px;left:50%;transform:translateX(-50%) translateY(-30px);
     background:var(--panel);border:1px solid var(--line);color:var(--text);
@@ -194,6 +216,11 @@
 </div>
 
 <div id="toast" class="toast"></div>
+
+<!-- Nút Admin Panel trôi nổi ở góc dưới -->
+<button id="floatingAdminBtn" onclick="switchView('admin')">
+  🛠️ Admin Panel
+</button>
 
 <div id="app">
   <header class="top">
@@ -355,34 +382,23 @@ XXXX-YYYY-ZZZZ"></textarea>
 <script>
 /* =========================================================
    CẤU HÌNH
-   =========================================================
-   ⚠️ CẢNH BÁO BẢO MẬT:
-   File này gọi thẳng Telegram Bot API (api.telegram.org) từ trình
-   duyệt bằng BOT_TOKEN đặt ngay bên dưới. Bất kỳ ai mở "View Page
-   Source" trên miniapp đều nhìn thấy token này và có thể dùng nó để
-   giả danh bot, đọc/gửi tin nhắn, hoặc phá dữ liệu bot của bạn.
-   Cách này CHỈ nên dùng để test cá nhân, KHÔNG host công khai cho
-   nhiều người dùng thật. Muốn an toàn, cần chuyển phần gọi API sang
-   một server riêng (không lộ token) — nếu cần mình có thể viết
-   backend đó cho bạn.
-*/
+   ========================================================= */
 const BOT_TOKEN  = "8774262600:AAFcG0dGDWHJjWpHimRErS9vVbWQj82TdNY"; // token lấy từ @BotFather
-const ADMIN_IDS  = [8647955563];            // ID Telegram (số) của admin
+const ADMIN_IDS  = [8647955563];            // ID Telegram (số) của admin (Thay ID của bạn vào đây)
 
 const TG_API = BOT_TOKEN && BOT_TOKEN !== "8774262600:AAFcG0dGDWHJjWpHimRErS9vVbWQj82TdNY"
   ? `https://api.telegram.org/bot${BOT_TOKEN}`
   : null;
 
-/* Gửi 1 tin nhắn Telegram tới chat_id chỉ định */
 async function tgSendMessage(chatId, text){
-  if(!TG_API){ console.warn('Chưa cấu hình BOT_TOKEN, bỏ qua gửi tin nhắn.'); return; }
+  if(!TG_API) return;
   try{
     await fetch(`${TG_API}/sendMessage`, {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ chat_id: chatId, text, parse_mode:'HTML' })
     });
-  }catch(e){ console.error('Gửi tin nhắn Telegram thất bại (có thể do CORS):', e); }
+  }catch(e){ console.error('Gửi tin nhắn Telegram thất bại:', e); }
 }
 async function notifyUser(userId, text){ await tgSendMessage(userId, text); }
 async function notifyAdmins(text){
@@ -390,8 +406,7 @@ async function notifyAdmins(text){
 }
 
 /* =========================================================
-   STORAGE LAYER — ưu tiên window.storage (khi xem trong Claude),
-   tự động rơi về localStorage khi tự host trên server riêng.
+   STORAGE LAYER
    ========================================================= */
 const hasCloudStorage = !!(window.storage && window.storage.get);
 
@@ -433,7 +448,7 @@ let STATE = {
 };
 
 /* =========================================================
-   TELEGRAM SDK — xác định user KHÔNG cần đăng nhập
+   TELEGRAM SDK
    ========================================================= */
 function getTelegramUser(){
   try{
@@ -452,7 +467,6 @@ function getTelegramUser(){
       }
     }
   }catch(e){}
-  // Fallback để test trên trình duyệt thường (ngoài Telegram)
   let devId = localStorage.getItem("dev_fake_id");
   if(!devId){
     devId = Math.floor(100000 + Math.random()*899999).toString();
@@ -462,7 +476,7 @@ function getTelegramUser(){
 }
 
 /* =========================================================
-   LOADER 0 -> 100%
+   LOADER
    ========================================================= */
 function runLoader(){
   return new Promise(resolve=>{
@@ -523,8 +537,10 @@ async function init(){
   document.getElementById('app').style.display = 'block';
 
   document.getElementById('helloName').textContent = STATE.me.first_name || ("ID " + uid);
+  
   if(STATE.isAdmin){
     document.getElementById('adminTabBtn').style.display = 'flex';
+    document.getElementById('floatingAdminBtn').style.display = 'flex'; // Hiển thị nút nổi góc dưới cho admin
   }
 
   renderAll();
@@ -567,7 +583,7 @@ function toast(msg){
 function money(n){ return Number(n||0).toLocaleString('vi-VN') + '₫'; }
 
 /* =========================================================
-   RENDER — chung
+   RENDER
    ========================================================= */
 function renderAll(){
   document.getElementById('balanceTop').textContent = money(STATE.me.balance);
@@ -640,7 +656,6 @@ async function buyProduct(id){
   renderAll();
 }
 
-/* ---------- Deposit ---------- */
 function renderDeposit(){
   const s = STATE.settings;
   const qrBox = document.getElementById('depQrBox');
@@ -679,7 +694,6 @@ async function submitDeposit(){
   renderAll();
 }
 
-/* ---------- Profile / Support ---------- */
 function renderProfile(){
   document.getElementById('profName').textContent = STATE.me.first_name || 'Người dùng';
   document.getElementById('profId').textContent = 'ID: ' + STATE.me.id + (STATE.me.username ? ' · @'+STATE.me.username : '');
