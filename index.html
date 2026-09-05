@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script>
         function getThemeConfig() {
-            let data = localStorage.getItem('miniapp_db_pink_v5');
+            let data = localStorage.getItem('miniapp_db_pink_v6');
             let primaryColor = '#db2777';
             if (data) {
                 try {
@@ -235,20 +235,20 @@
         };
 
         function getDB() {
-            let data = localStorage.getItem('miniapp_db_pink_v5');
+            let data = localStorage.getItem('miniapp_db_pink_v6');
             if (!data) {
                 data = JSON.stringify(defaultData);
-                localStorage.setItem('miniapp_db_pink_v5', data);
+                localStorage.setItem('miniapp_db_pink_v6', data);
             }
             return JSON.parse(data);
         }
 
         function saveDB(data) {
-            localStorage.setItem('miniapp_db_pink_v5', JSON.stringify(data));
+            localStorage.setItem('miniapp_db_pink_v6', JSON.stringify(data));
             window.dispatchEvent(new Event('storage_updated'));
         }
 
-        // Lấy thông tin user an toàn tuyệt đối, chống lỗi "Đang tải"
+        // Lấy đúng ID và thông tin của tài khoản Telegram đang mở app
         let currentUser = { id: 8647955563, first_name: 'Quản Trị Viên', username: 'admin' };
 
         function resolveUser() {
@@ -266,7 +266,7 @@
                     }
                 }
             } catch (e) {
-                console.warn('Không đọc được Telegram WebApp context, chuyển về chế độ mặc định.');
+                console.warn('Không đọc được Telegram WebApp context.');
             }
         }
 
